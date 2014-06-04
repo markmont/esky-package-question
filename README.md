@@ -64,3 +64,47 @@ Other possibly relevant details:  MacOS X 10.9 Mavericks, Python 2.7.6 (local bu
 I'll update this, here, if I get a solution, as well as https://stackoverflow.com/questions/24021485/esky-not-including-sub-module
 
 
+# Solution
+
+I've solved this problem -- the problem was due to my limited knowledge of Python distutils and setuptools.  Since things "just worked" with py2app (which was using setuptools), I assumed that the problem was with how Etsy was configured when the problem was really with how I was using distutils.
+
+The problem was that helloworld.py was not being copied into the frozen app.
+
+The solution involved restructuring the files and changing the disutils configuration to explicitly add HelloApp as a package.
+
+New file structure:
+
+    HelloApp/
+        hello.py   # formerly HelloApp.py
+        HelloApp/
+            __init__.py
+            helloform.py
+        setup.py
+
+New setup.cfg:
+
+    from esky import bdist_esky
+    from distutils.core import setup
+    
+    PY2APP_OPTIONS = {
+        'argv_emulation': True,
+        'includes': [ 'sip', 'PyQt5' ],
+        'qt_plugins': [ '*' ]
+        }
+    ESKY_OPTIONS = {
+        "freezer_module": "py2app",
+        "freezer_options": PY2APP_OPTIONS,
+        "includes": [ 'sip', 'PyQt5' ]
+        }
+    
+    HelloApp = bdist_esky.Executable( "hello.py", gui_only=True )
+    
+    setup(
+        name='hello',
+        version = "2014060301",
+        data_files=[],
+        options = { "bdist_esky": ESKY_OPTIONS },
+        scripts=[ HelloApp ],
+        packages=[ 'HelloApp' ],
+    )
+
